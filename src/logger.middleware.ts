@@ -1,0 +1,28 @@
+// logger.middleware.ts
+import {Injectable, Logger, MiddlewareConsumer, NestMiddleware, NestModule} from '@nestjs/common';
+import {NextFunction, Request, Response} from 'express';
+
+@Injectable()
+export class LoggerMiddleware implements NestMiddleware {
+    private logger = new Logger('HTTP');
+
+    use(req: Request, res: Response, next: NextFunction) {
+        const {method, originalUrl} = req;
+        const start = Date.now();
+
+        res.on('finish', () => {
+            const {statusCode} = res;
+            const duration = Date.now() - start;
+            this.logger.log(`${method} ${originalUrl} ${statusCode} - ${duration}ms`);
+        });
+
+        next();
+    }
+}
+
+// app.module.ts
+export class AppModule implements NestModule {
+    configure(consumer: MiddlewareConsumer) {
+        consumer.apply(LoggerMiddleware).forRoutes('*');
+    }
+}
